@@ -1,5 +1,6 @@
 const STORAGE_KEY = "it-loan-system-web-demo-v1";
 const STORAGE_META_KEY = "it-loan-system-web-demo-v1-meta";
+const TOUR_SEEN_KEY = "it-loan-system-tour-seen-v1";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const REMINDER_WEBHOOK_URL = "";
 const REMINDER_TRIGGERS = {
@@ -35,6 +36,58 @@ const REMINDER_TRIGGERS = {
   },
 };
 
+const TOUR_STEPS = [
+  {
+    tab: "dashboard",
+    selector: ".app-header",
+    title: "Welcome",
+    text: "This guided tour walks through the IT Loan System and the main actions available to staff.",
+  },
+  {
+    tab: "dashboard",
+    selector: ".tab-bar",
+    title: "Main Navigation",
+    text: "Use these tabs to switch between dashboard, equipment, users, and loans.",
+  },
+  {
+    tab: "dashboard",
+    selector: "#tab-dashboard .stats-grid",
+    title: "Dashboard Metrics",
+    text: "These cards summarize total equipment, current availability, items on loan, repair workload, and overdue count.",
+  },
+  {
+    tab: "equipment",
+    selector: "#tab-equipment .toolbar",
+    title: "Equipment Controls",
+    text: "Add assets, filter statuses, and mark selected devices as available or under repair.",
+  },
+  {
+    tab: "users",
+    selector: "#tab-users .toolbar",
+    title: "User Management",
+    text: "Register borrowers and maintain staff details for accountability and notifications.",
+  },
+  {
+    tab: "loans",
+    selector: "#tab-loans .toolbar",
+    title: "Loan Operations",
+    text: "Issue new loans, process returns, extend due dates, and manage reminder actions.",
+  },
+  {
+    tab: "loans",
+    selector: "#reminder-cycle-btn",
+    title: "Automated Reminder Cycle",
+    text: "Run the policy-based reminder cycle for 7-day, 1-day, due-day, and overdue follow-ups.",
+  },
+  {
+    tab: "loans",
+    selector: ".status-bar",
+    placement: "top",
+    title: "Status Feedback",
+    text: "The status bar confirms recent actions so operators can quickly verify outcomes.",
+  },
+];
+
 const state = {
   data: loadState(),
   selected: {
@@ -43,6 +96,10 @@ const state = {
     loan: null,
   },
   activeTab: "dashboard",
+  tour: {
+    active: false,
+    stepIndex: 0,
+  },
 };
 
 const elements = {
@@ -50,6 +107,7 @@ const elements = {
   tabPanels: document.querySelectorAll(".tab-panel"),
   statusText: document.getElementById("status-text"),
   refreshBtn: document.getElementById("refresh-btn"),
+  takeTourBtn: document.getElementById("take-tour-btn"),
   loadSampleBtn: document.getElementById("load-sample-btn"),
   randomFakeBtn: document.getElementById("random-fake-btn"),
   resetDataBtn: document.getElementById("reset-data-btn"),
@@ -83,6 +141,16 @@ const elements = {
   modalTitle: document.getElementById("modal-title"),
   modalForm: document.getElementById("modal-form"),
   modalClose: document.getElementById("modal-close"),
+
+  tourRoot: document.getElementById("tour-root"),
+  tourSpotlight: document.getElementById("tour-spotlight"),
+  tourCard: document.getElementById("tour-card"),
+  tourProgress: document.getElementById("tour-progress"),
+  tourTitle: document.getElementById("tour-title"),
+  tourText: document.getElementById("tour-text"),
+  tourSkipBtn: document.getElementById("tour-skip-btn"),
+  tourPrevBtn: document.getElementById("tour-prev-btn"),
+  tourNextBtn: document.getElementById("tour-next-btn"),
 };
 
 boot();
@@ -92,6 +160,7 @@ function boot() {
   const bootMessage = bootstrapDemoData();
   switchTab(state.activeTab);
   refreshAll(bootMessage || "Ready");
+  maybeStartTour();
 }
 
 function bindEvents() {
@@ -107,6 +176,7 @@ function bindEvents() {
     refreshAll(`Updated: ${formatTime(new Date())}`);
   });
 
+  elements.takeTourBtn.addEventListener("click", () => startTour(false));
   elements.loadSampleBtn.addEventListener("click", loadSampleData);
   elements.randomFakeBtn.addEventListener("click", loadRandomFakeData);
   elements.resetDataBtn.addEventListener("click", resetData);
@@ -135,11 +205,50 @@ function bindEvents() {
     }
   });
 
+  elements.tourSkipBtn.addEventListener("click", () => {
+    stopTour(true);
+    setStatus("Guided tour skipped.");
+  });
+  elements.tourPrevBtn.addEventListener("click", prevTourStep);
+  elements.tourNextBtn.addEventListener("click", nextTourStep);
+
   document.addEventListener("keydown", (event) => {
+    if (state.tour.active && event.key === "Escape") {
+      stopTour(true);
+      setStatus("Guided tour closed.");
+      return;
+    }
+
+    if (state.tour.active && (event.key === "ArrowRight" || event.key === "Enter")) {
+      nextTourStep();
+      return;
+    }
+
+    if (state.tour.active && event.key === "ArrowLeft") {
+      prevTourStep();
+      return;
+    }
+
     if (event.key === "Escape" && !elements.modalRoot.classList.contains("hidden")) {
       closeModal();
     }
   });
+
+  window.addEventListener("resize", () => {
+    if (state.tour.active) {
+      positionTourElements();
+    }
+  });
+
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (state.tour.active) {
+        positionTourElements();
+      }
+    },
+    true
+  );
 }
 
 function switchTab(tabName) {
@@ -152,6 +261,192 @@ function switchTab(tabName) {
   elements.tabPanels.forEach((panel) => {
     panel.classList.toggle("active", panel.id === `tab-${tabName}`);
   });
+
+  if (state.tour.active) {
+    window.requestAnimationFrame(positionTourElements);
+  }
+}
+
+function maybeStartTour() {
+  if (localStorage.getItem(TOUR_SEEN_KEY) === "1") {
+    return;
+  }
+
+  window.setTimeout(() => {
+    if (!state.tour.active) {
+      startTour(true);
+    }
+  }, 500);
+}
+
+function startTour(autoStarted) {
+  closeModal();
+  state.tour.active = true;
+  state.tour.stepIndex = 0;
+  elements.tourRoot.classList.remove("hidden");
+  elements.tourRoot.setAttribute("aria-hidden", "false");
+  renderTourStep();
+
+  if (!autoStarted) {
+    setStatus("Guided tour started.");
+  }
+}
+
+function stopTour(markAsSeen) {
+  state.tour.active = false;
+  elements.tourRoot.classList.add("hidden");
+  elements.tourRoot.setAttribute("aria-hidden", "true");
+  elements.tourSpotlight.style.display = "none";
+
+  if (markAsSeen) {
+    localStorage.setItem(TOUR_SEEN_KEY, "1");
+  }
+}
+
+function nextTourStep() {
+  if (!state.tour.active) {
+    return;
+  }
+
+  if (state.tour.stepIndex >= TOUR_STEPS.length - 1) {
+    stopTour(true);
+    setStatus("Guided tour completed.");
+    return;
+  }
+
+  state.tour.stepIndex += 1;
+  renderTourStep();
+}
+
+function prevTourStep() {
+  if (!state.tour.active || state.tour.stepIndex <= 0) {
+    return;
+  }
+
+  state.tour.stepIndex -= 1;
+  renderTourStep();
+}
+
+function renderTourStep() {
+  if (!state.tour.active) {
+    return;
+  }
+
+  const step = TOUR_STEPS[state.tour.stepIndex];
+  if (!step) {
+    stopTour(true);
+    return;
+  }
+
+  if (step.tab && state.activeTab !== step.tab) {
+    switchTab(step.tab);
+  }
+
+  elements.tourProgress.textContent = `Step ${state.tour.stepIndex + 1} of ${TOUR_STEPS.length}`;
+  elements.tourTitle.textContent = step.title;
+  elements.tourText.textContent = step.text;
+  elements.tourPrevBtn.disabled = state.tour.stepIndex === 0;
+  elements.tourNextBtn.textContent = state.tour.stepIndex === TOUR_STEPS.length - 1 ? "Finish" : "Next";
+
+  window.requestAnimationFrame(positionTourElements);
+}
+
+function positionTourElements() {
+  if (!state.tour.active) {
+    return;
+  }
+
+  const step = TOUR_STEPS[state.tour.stepIndex];
+  if (!step) {
+    return;
+  }
+
+  const target = step.selector ? document.querySelector(step.selector) : null;
+  if (!target) {
+    elements.tourSpotlight.style.display = "none";
+    positionTourCard(null, step.placement);
+    return;
+  }
+
+  const rect = target.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) {
+    elements.tourSpotlight.style.display = "none";
+    positionTourCard(null, step.placement);
+    return;
+  }
+
+  const pad = 6;
+  const width = Math.min(rect.width + pad * 2, window.innerWidth - 16);
+  const height = Math.min(rect.height + pad * 2, window.innerHeight - 16);
+  const left = clamp(rect.left - pad, 8, window.innerWidth - width - 8);
+  const top = clamp(rect.top - pad, 8, window.innerHeight - height - 8);
+
+  elements.tourSpotlight.style.display = "block";
+  elements.tourSpotlight.style.width = `${width}px`;
+  elements.tourSpotlight.style.height = `${height}px`;
+  elements.tourSpotlight.style.left = `${left}px`;
+  elements.tourSpotlight.style.top = `${top}px`;
+
+  positionTourCard(
+    {
+      left,
+      top,
+      width,
+      height,
+      right: left + width,
+      bottom: top + height,
+    },
+    step.placement
+  );
+}
+
+function positionTourCard(targetRect, preferredPlacement) {
+  const card = elements.tourCard;
+  const cardRect = card.getBoundingClientRect();
+  const margin = 8;
+  const gap = 12;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  if (!targetRect) {
+    const centerTop = Math.max(margin, (viewportHeight - cardRect.height) / 2);
+    const centerLeft = Math.max(margin, (viewportWidth - cardRect.width) / 2);
+    card.style.top = `${centerTop}px`;
+    card.style.left = `${centerLeft}px`;
+    return;
+  }
+
+  let placement = preferredPlacement || "bottom";
+  const fitsBottom = targetRect.bottom + gap + cardRect.height <= viewportHeight - margin;
+  const fitsTop = targetRect.top - gap - cardRect.height >= margin;
+
+  if (placement === "top" && !fitsTop && fitsBottom) {
+    placement = "bottom";
+  }
+  if (placement === "bottom" && !fitsBottom && fitsTop) {
+    placement = "top";
+  }
+  if (!fitsTop && !fitsBottom) {
+    placement = "center";
+  }
+
+  let top;
+  if (placement === "top") {
+    top = targetRect.top - cardRect.height - gap;
+  } else if (placement === "bottom") {
+    top = targetRect.bottom + gap;
+  } else {
+    top = Math.max(margin, (viewportHeight - cardRect.height) / 2);
+  }
+
+  const centeredLeft = targetRect.left + targetRect.width / 2 - cardRect.width / 2;
+  const left = clamp(centeredLeft, margin, viewportWidth - cardRect.width - margin);
+  card.style.top = `${Math.max(margin, top)}px`;
+  card.style.left = `${left}px`;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
 }
 
 function refreshAll(statusMessage) {

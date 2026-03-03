@@ -23,6 +23,7 @@
         <h1>IT Loan System</h1>
       </div>
       <div class="header-actions">
+        <button id="take-tour-btn" class="btn subtle">Take Tour</button>
         <button id="load-sample-btn" class="btn subtle">Reset to Fake Data</button>
         <button id="random-fake-btn" class="btn subtle">Random Fake DB</button>
         <button id="reset-data-btn" class="btn subtle">Start Empty</button>
@@ -211,6 +212,20 @@
       </div>
       <form id="modal-form" class="modal-form"></form>
     </div>
+  </div>
+
+  <div id="tour-root" class="tour-root hidden" aria-hidden="true">
+    <div id="tour-spotlight" class="tour-spotlight" aria-hidden="true"></div>
+    <section id="tour-card" class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title">
+      <p id="tour-progress" class="tour-progress"></p>
+      <h2 id="tour-title"></h2>
+      <p id="tour-text" class="tour-text"></p>
+      <div class="tour-actions">
+        <button id="tour-skip-btn" class="btn subtle" type="button">Skip</button>
+        <button id="tour-prev-btn" class="btn subtle" type="button">Back</button>
+        <button id="tour-next-btn" class="btn primary" type="button">Next</button>
+      </div>
+    </section>
   </div>
 
   <script src="app.js"></script>

@@ -27,6 +27,7 @@ If you want this demo as the site root (`/.../<repo>/`), copy these 3 files into
 - A fake database auto-loads for first-time visitors.
 - Equipment statuses in demo: `available`, `on_loan`, `under_repair`.
 - Header actions:
+  - `Take Tour`: guided walkthrough of major screens and controls
   - `Reset to Fake Data`: restore the default demo dataset
   - `Random Fake DB`: generate a fresh randomized dataset
   - `Start Empty`: clear everything and test from scratch
