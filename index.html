@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DNColleges IT Loan System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="background-shape background-shape-one" aria-hidden="true"></div>
+  <div class="background-shape background-shape-two" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">DNColleges Group</p>
+        <h1>IT Loan System</h1>
+      </div>
+      <div class="header-actions">
+        <button id="load-sample-btn" class="btn subtle">Reset to Fake Data</button>
+        <button id="random-fake-btn" class="btn subtle">Random Fake DB</button>
+        <button id="reset-data-btn" class="btn subtle">Start Empty</button>
+        <button id="refresh-btn" class="btn primary">Refresh</button>
+      </div>
+    </header>
+
+    <nav class="tab-bar" aria-label="Main tabs">
+      <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+      <button class="tab-btn" data-tab="equipment">Equipment</button>
+      <button class="tab-btn" data-tab="users">Users</button>
+      <button class="tab-btn" data-tab="loans">Loans</button>
+    </nav>
+
+    <main>
+      <section id="tab-dashboard" class="tab-panel active" aria-label="Dashboard">
+        <div class="stats-grid">
+          <article class="stat-card">
+            <h3>Total Equipment</h3>
+            <p id="stat-total">0</p>
+          </article>
+          <article class="stat-card">
+            <h3>Available</h3>
+            <p id="stat-available">0</p>
+          </article>
+          <article class="stat-card">
+            <h3>On Loan</h3>
+            <p id="stat-on-loan">0</p>
+          </article>
+          <article class="stat-card">
+            <h3>Under Repair</h3>
+            <p id="stat-under-repair">0</p>
+          </article>
+          <article class="stat-card danger">
+            <h3>Overdue</h3>
+            <p id="stat-overdue">0</p>
+          </article>
+        </div>
+
+        <div class="dashboard-grid">
+          <section class="card">
+            <div class="card-head">
+              <h2>Overdue Items</h2>
+            </div>
+            <div class="table-wrap">
+              <table id="overdue-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Equipment</th>
+                    <th>User</th>
+                    <th>Days</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card quick-actions">
+            <div class="card-head">
+              <h2>Quick Actions</h2>
+            </div>
+            <button class="btn primary full" data-switch-tab="loans">New Loan</button>
+            <button class="btn primary full" data-switch-tab="equipment">Add Equipment</button>
+            <button class="btn primary full" data-switch-tab="users">Add User</button>
+            <div class="policy-box">
+              <h3>Notification Policy</h3>
+              <ul class="policy-list">
+                <li>7 days before due date</li>
+                <li>1 day before due date</li>
+                <li>On due date</li>
+                <li>Weekly while overdue</li>
+              </ul>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="tab-equipment" class="tab-panel" aria-label="Equipment">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <button id="add-equipment-btn" class="btn primary">Add Equipment</button>
+            <button id="delete-equipment-btn" class="btn subtle">Delete</button>
+            <button id="mark-under-repair-btn" class="btn subtle">Mark Under Repair</button>
+            <button id="mark-available-btn" class="btn subtle">Mark Available</button>
+          </div>
+          <div class="toolbar-right">
+            <label for="equipment-filter">Filter:</label>
+            <select id="equipment-filter">
+              <option value="all">All</option>
+              <option value="available">Available</option>
+              <option value="on_loan">On Loan</option>
+              <option value="under_repair">Under Repair</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-wrap">
+            <table id="equipment-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Asset Tag</th>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Condition</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-users" class="tab-panel" aria-label="Users">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <button id="add-user-btn" class="btn primary">Add User</button>
+            <button id="delete-user-btn" class="btn subtle">Delete</button>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-wrap">
+            <table id="users-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Staff ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Department</th>
+                  <th>Late Returns</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-loans" class="tab-panel" aria-label="Loans">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <button id="new-loan-btn" class="btn primary">New Loan</button>
+            <button id="return-loan-btn" class="btn subtle">Return</button>
+            <button id="extend-loan-btn" class="btn subtle">Extend</button>
+            <button id="remind-loan-btn" class="btn subtle">Remind User</button>
+            <button id="reminder-cycle-btn" class="btn subtle">Run Reminder Cycle</button>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-wrap">
+            <table id="loans-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Equipment</th>
+                  <th>Borrower</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                  <th>Days Left</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="status-bar">
+      <span id="status-text">Ready</span>
+    </footer>
+  </div>
+
+  <div id="modal-root" class="modal-root hidden" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <h2 id="modal-title"></h2>
+        <button id="modal-close" class="icon-btn" aria-label="Close">X</button>
+      </div>
+      <form id="modal-form" class="modal-form"></form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
